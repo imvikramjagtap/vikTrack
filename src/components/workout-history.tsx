@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { CalendarIcon, FileX } from 'lucide-react'
+import { CalendarIcon, FileX, ArrowUpDown } from 'lucide-react'
 import { format, isWithinInterval, parseISO } from 'date-fns'
 import { DateRange } from 'react-day-picker'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -24,8 +24,22 @@ interface WorkoutEntry {
   }[]
 }
 
+interface FlattenedWorkout {
+  date: string
+  muscleGroup: string
+  exercise: string
+  set: number
+  reps: number
+  weight: number
+}
+
+type SortField = 'date' | 'set' | 'reps' | 'weight'
+type SortOrder = 'asc' | 'desc'
+
 export default function WorkoutHistory() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>()
+  const [sortField, setSortField] = useState<SortField>('date')
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
   const workouts = useSelector((state: RootState) => state.workout.workouts)
 
   const filteredWorkouts = workouts.filter(workout => {
@@ -36,21 +50,46 @@ export default function WorkoutHistory() {
     return true
   })
 
-  // Group workouts by date and muscle
-  const groupedWorkouts = filteredWorkouts.reduce((acc, workout) => {
-    if (!acc[workout.date]) {
-      acc[workout.date] = {}
-    }
-    workout.muscleGroups.forEach((muscleGroup) => {
-      if (!acc[workout.date][muscleGroup.name]) {
-        acc[workout.date][muscleGroup.name] = []
-      }
-      acc[workout.date][muscleGroup.name].push(...muscleGroup.exercises)
-    })
-    return acc
-  }, {} as Record<string, Record<string, WorkoutEntry['muscleGroups'][0]['exercises']>>)
+  // Flatten and sort workouts
+  const flattenedWorkouts: FlattenedWorkout[] = filteredWorkouts.flatMap(workout =>
+    workout.muscleGroups.flatMap(muscleGroup =>
+      muscleGroup.exercises.flatMap(exercise =>
+        exercise.sets.map((set, index) => ({
+          date: workout.date,
+          muscleGroup: muscleGroup.name,
+          exercise: exercise.name,
+          set: index + 1,
+          reps: set.reps,
+          weight: set.weight
+        }))
+      )
+    )
+  )
 
-  const hasData = Object.keys(groupedWorkouts).length > 0
+  const sortedWorkouts = flattenedWorkouts.sort((a, b) => {
+    if (sortField === 'date') {
+      return sortOrder === 'asc' 
+        ? new Date(a.date).getTime() - new Date(b.date).getTime()
+        : new Date(b.date).getTime() - new Date(a.date).getTime()
+    }
+    if (sortField === 'set' || sortField === 'reps' || sortField === 'weight') {
+      return sortOrder === 'asc' 
+        ? a[sortField] - b[sortField]
+        : b[sortField] - a[sortField]
+    }
+    return 0
+  })
+
+  const toggleSort = (field: SortField) => {
+    if (field === sortField) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortOrder('asc')
+    }
+  }
+
+  const hasData = sortedWorkouts.length > 0
 
   return (
     <Card>
@@ -90,38 +129,32 @@ export default function WorkoutHistory() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
+                <TableHead className="cursor-pointer" onClick={() => toggleSort('date')}>
+                  Date {sortField === 'date' && <ArrowUpDown className="ml-2 h-4 w-4 inline" />}
+                </TableHead>
                 <TableHead>Muscle Group</TableHead>
                 <TableHead>Exercise</TableHead>
-                <TableHead>Set</TableHead>
-                <TableHead>Reps</TableHead>
-                <TableHead>Weight (kg)</TableHead>
+                <TableHead className="cursor-pointer" onClick={() => toggleSort('set')}>
+                  Set {sortField === 'set' && <ArrowUpDown className="ml-2 h-4 w-4 inline" />}
+                </TableHead>
+                <TableHead className="cursor-pointer" onClick={() => toggleSort('reps')}>
+                  Reps {sortField === 'reps' && <ArrowUpDown className="ml-2 h-4 w-4 inline" />}
+                </TableHead>
+                <TableHead className="cursor-pointer" onClick={() => toggleSort('weight')}>
+                  Weight (kg) {sortField === 'weight' && <ArrowUpDown className="ml-2 h-4 w-4 inline" />}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {Object.entries(groupedWorkouts).map(([date, muscles]) => (
-                Object.entries(muscles).map(([muscle, exercises], muscleIndex) => (
-                  exercises.map((exercise, exerciseIndex) => (
-                    exercise.sets.map((set, setIndex) => (
-                      <TableRow key={`${date}-${muscle}-${exerciseIndex}-${setIndex}`}>
-                        {exerciseIndex === 0 && setIndex === 0 && muscleIndex === 0 && (
-                          <TableCell rowSpan={Object.values(muscles).flat().reduce((acc, e) => acc + e.sets.length, 0)}>
-                            {format(parseISO(date), 'MMM dd, yyyy')}
-                          </TableCell>
-                        )}
-                        {setIndex === 0 && exerciseIndex === 0 && (
-                          <TableCell rowSpan={exercises.reduce((acc, e) => acc + e.sets.length, 0)}>
-                            {muscle}
-                          </TableCell>
-                        )}
-                        {setIndex === 0 && <TableCell rowSpan={exercise.sets.length}>{exercise.name}</TableCell>}
-                        <TableCell>{setIndex + 1}</TableCell>
-                        <TableCell>{set.reps}</TableCell>
-                        <TableCell>{set.weight}</TableCell>
-                      </TableRow>
-                    ))
-                  ))
-                ))
+              {sortedWorkouts.map((workout, index) => (
+                <TableRow key={`${workout.date}-${workout.muscleGroup}-${workout.exercise}-${workout.set}-${index}`}>
+                  <TableCell>{format(parseISO(workout.date), 'MMM dd, yyyy')}</TableCell>
+                  <TableCell>{workout.muscleGroup}</TableCell>
+                  <TableCell>{workout.exercise}</TableCell>
+                  <TableCell>{workout.set}</TableCell>
+                  <TableCell>{workout.reps}</TableCell>
+                  <TableCell>{workout.weight}</TableCell>
+                </TableRow>
               ))}
             </TableBody>
           </Table>
