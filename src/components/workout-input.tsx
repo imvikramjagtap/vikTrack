@@ -11,6 +11,7 @@ import { Calendar } from '@/components/ui/calendar'
 import { CalendarIcon, PlusIcon, MinusIcon } from 'lucide-react'
 import { format } from 'date-fns'
 import { Checkbox } from '@/components/ui/checkbox'
+import { toast } from "@/hooks/use-toast"
 
 export default function WorkoutInput() {
   const [selectedMuscles, setSelectedMuscles] = useState<string[]>([])
@@ -44,7 +45,15 @@ export default function WorkoutInput() {
   const handleRemoveSet = (muscleIndex: number, exerciseIndex: number, setIndex: number) => {
     setWorkout(prevWorkout => {
       const newWorkout = JSON.parse(JSON.stringify(prevWorkout))
-      newWorkout[muscleIndex].exercises[exerciseIndex].sets.splice(setIndex, 1)
+      if (newWorkout[muscleIndex].exercises[exerciseIndex].sets.length > 1) {
+        newWorkout[muscleIndex].exercises[exerciseIndex].sets.splice(setIndex, 1)
+      } else {
+        toast({
+          title: "Cannot remove set",
+          description: "You must keep at least one set for each exercise.",
+          variant: "destructive",
+        })
+      }
       return newWorkout
     })
   }
@@ -59,6 +68,10 @@ export default function WorkoutInput() {
     setWorkout([])
     setSelectedMuscles([])
     setDate(new Date())
+    toast({
+      title: "Workout saved",
+      description: "Your workout has been successfully saved.",
+    })
   }
 
   // Update workout when selected muscles change
