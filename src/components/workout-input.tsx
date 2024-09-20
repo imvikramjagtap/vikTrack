@@ -1,72 +1,58 @@
 import { useState, useEffect } from 'react'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
+import { addWorkout, MuscleGroup, Workout } from '../store/workoutSlice'
+import { RootState } from '../store'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
-import { CalendarIcon } from 'lucide-react'
+import { CalendarIcon, PlusIcon, MinusIcon } from 'lucide-react'
 import { format } from 'date-fns'
-import { addWorkout, WorkoutState } from '@/store/workoutSlice'
+import { Checkbox } from '@/components/ui/checkbox'
 
-type Set = {
-  reps: number
-  weight: number
-}
-
-type Exercise = {
-  name: string
-  sets: Set[]
-}
-
-type MuscleGroup = {
-  name: string
-  exercises: Exercise[]
-}
-
-const allMuscleGroups: MuscleGroup[] = [
-  {
-    name: 'Back Muscles',
-    exercises: [
-      { name: 'Bent-over Rowing', sets: [{ reps: 12, weight: 0 }, { reps: 12, weight: 0 }, { reps: 12, weight: 0 }, { reps: 12, weight: 0 }] },
-      { name: 'Seated Rowing', sets: [{ reps: 12, weight: 0 }, { reps: 12, weight: 0 }, { reps: 12, weight: 0 }, { reps: 12, weight: 0 }] },
-      { name: 'Lat Pulldown', sets: [{ reps: 12, weight: 0 }, { reps: 12, weight: 0 }, { reps: 12, weight: 0 }, { reps: 12, weight: 0 }] },
-    ],
-  },
-  {
-    name: 'Biceps Muscles',
-    exercises: [
-      { name: 'E-Z Bar Curl', sets: [{ reps: 12, weight: 0 }, { reps: 12, weight: 0 }, { reps: 12, weight: 0 }, { reps: 12, weight: 0 }] },
-      { name: 'Preacher Curl', sets: [{ reps: 12, weight: 0 }, { reps: 12, weight: 0 }, { reps: 12, weight: 0 }, { reps: 12, weight: 0 }] },
-      { name: 'Incline DB Curl', sets: [{ reps: 12, weight: 0 }, { reps: 12, weight: 0 }, { reps: 12, weight: 0 }, { reps: 12, weight: 0 }] },
-      { name: 'Hammer Curl', sets: [{ reps: 15, weight: 0 }, { reps: 15, weight: 0 }, { reps: 15, weight: 0 }] },
-    ],
-  },
-  // ... (other muscle groups)
-]
-
-export function WorkoutInputComponent() {
+export default function WorkoutInput() {
   const [selectedMuscles, setSelectedMuscles] = useState<string[]>([])
   const [workout, setWorkout] = useState<MuscleGroup[]>([])
   const [date, setDate] = useState<Date>(new Date())
   const dispatch = useDispatch()
+  const allMuscleGroups = useSelector((state: RootState) => state.workout.muscleGroups)
 
-  const handleMuscleSelection = (muscles: string[]) => {
-    setSelectedMuscles(muscles)
+  const handleMuscleSelection = (muscle: string) => {
+    setSelectedMuscles(prev => 
+      prev.includes(muscle) ? prev.filter(m => m !== muscle) : [...prev, muscle]
+    )
   }
 
-  const handleInputChange = (muscleIndex: number, exerciseIndex: number, setIndex: number, field: keyof Set, value: number) => {
-    const updatedWorkout = [...workout]
-    updatedWorkout[muscleIndex].exercises[exerciseIndex].sets[setIndex][field] = value
-    setWorkout(updatedWorkout)
+  const handleInputChange = (muscleIndex: number, exerciseIndex: number, setIndex: number, field: 'reps' | 'weight', value: number) => {
+    setWorkout(prevWorkout => {
+      const newWorkout = JSON.parse(JSON.stringify(prevWorkout))
+      newWorkout[muscleIndex].exercises[exerciseIndex].sets[setIndex][field] = value
+      return newWorkout
+    })
+  }
+
+  const handleAddSet = (muscleIndex: number, exerciseIndex: number) => {
+    setWorkout(prevWorkout => {
+      const newWorkout = JSON.parse(JSON.stringify(prevWorkout))
+      newWorkout[muscleIndex].exercises[exerciseIndex].sets.push({ reps: 0, weight: 0 })
+      return newWorkout
+    })
+  }
+
+  const handleRemoveSet = (muscleIndex: number, exerciseIndex: number, setIndex: number) => {
+    setWorkout(prevWorkout => {
+      const newWorkout = JSON.parse(JSON.stringify(prevWorkout))
+      newWorkout[muscleIndex].exercises[exerciseIndex].sets.splice(setIndex, 1)
+      return newWorkout
+    })
   }
 
   const handleSubmit = () => {
-    const newWorkout: WorkoutState = {
+    const newWorkout: Workout = {
       date: format(date, 'yyyy-MM-dd'),
-      workout: workout
+      muscleGroups: workout
     }
     dispatch(addWorkout(newWorkout))
     // Reset the form after submission
@@ -78,8 +64,8 @@ export function WorkoutInputComponent() {
   // Update workout when selected muscles change
   useEffect(() => {
     const newWorkout = allMuscleGroups.filter(mg => selectedMuscles.includes(mg.name))
-    setWorkout(newWorkout)
-  }, [selectedMuscles])
+    setWorkout(JSON.parse(JSON.stringify(newWorkout)))
+  }, [selectedMuscles, allMuscleGroups])
 
   return (
     <div className="space-y-4">
@@ -112,18 +98,18 @@ export function WorkoutInputComponent() {
           </div>
           <div>
             <Label htmlFor="muscles">Select Muscles to Train</Label>
-            <Select onValueChange={handleMuscleSelection} value={selectedMuscles}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select muscles" />
-              </SelectTrigger>
-              <SelectContent>
-                {allMuscleGroups.map((muscleGroup) => (
-                  <SelectItem key={muscleGroup.name} value={muscleGroup.name}>
-                    {muscleGroup.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="grid grid-cols-2 gap-2">
+              {allMuscleGroups.map((muscleGroup) => (
+                <div key={muscleGroup.name} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={muscleGroup.name}
+                    checked={selectedMuscles.includes(muscleGroup.name)}
+                    onCheckedChange={() => handleMuscleSelection(muscleGroup.name)}
+                  />
+                  <Label htmlFor={muscleGroup.name}>{muscleGroup.name}</Label>
+                </div>
+              ))}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -138,11 +124,11 @@ export function WorkoutInputComponent() {
               <div key={exercise.name} className="mb-4">
                 <h4 className="font-semibold mb-2">{exercise.name}</h4>
                 {exercise.sets.map((set, setIndex) => (
-                  <div key={setIndex} className="grid grid-cols-3 gap-4 mb-2">
-                    <div>
+                  <div key={setIndex} className="grid grid-cols-7 gap-2 mb-2 items-center">
+                    <div className="col-span-1">
                       <Label htmlFor={`${exercise.name}-set-${setIndex + 1}`}>Set {setIndex + 1}</Label>
                     </div>
-                    <div>
+                    <div className="col-span-2">
                       <Label htmlFor={`${exercise.name}-reps-${setIndex}`}>Reps</Label>
                       <Input
                         id={`${exercise.name}-reps-${setIndex}`}
@@ -151,7 +137,7 @@ export function WorkoutInputComponent() {
                         onChange={(e) => handleInputChange(muscleIndex, exerciseIndex, setIndex, 'reps', parseInt(e.target.value))}
                       />
                     </div>
-                    <div>
+                    <div className="col-span-2">
                       <Label htmlFor={`${exercise.name}-weight-${setIndex}`}>Weight (kg)</Label>
                       <Input
                         id={`${exercise.name}-weight-${setIndex}`}
@@ -159,6 +145,25 @@ export function WorkoutInputComponent() {
                         value={set.weight}
                         onChange={(e) => handleInputChange(muscleIndex, exerciseIndex, setIndex, 'weight', parseFloat(e.target.value))}
                       />
+                    </div>
+                    <div className="col-span-2 flex justify-end">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleRemoveSet(muscleIndex, exerciseIndex, setIndex)}
+                        className="mr-2"
+                      >
+                        <MinusIcon className="h-4 w-4" />
+                      </Button>
+                      {setIndex === exercise.sets.length - 1 && (
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleAddSet(muscleIndex, exerciseIndex)}
+                        >
+                          <PlusIcon className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ))}
