@@ -1,7 +1,7 @@
 import { Provider } from 'react-redux'
 import { PersistGate } from 'redux-persist/integration/react'
 import { store, persistor } from './store'
-import Dashboard from './components/dash'
+import Dashboard from './components/dashboard'
 
 
 function MyApp() {
