@@ -21,34 +21,21 @@ export interface Workout {
 }
 
 interface WorkoutState {
-  muscleGroups: MuscleGroup[]
   workouts: Workout[]
+  muscleGroups: MuscleGroup[]
 }
 
-const initialMuscleGroups: MuscleGroup[] = [
-  {
-    name: 'Back Muscles',
-    exercises: [
-      { name: 'Bent-over Rowing', sets: [{ reps: 12, weight: 0 }] },
-      { name: 'Seated Rowing', sets: [{ reps: 12, weight: 0 }] },
-      { name: 'Lat Pulldown', sets: [{ reps: 12, weight: 0 }] },
-    ],
-  },
-  {
-    name: 'Biceps Muscles',
-    exercises: [
-      { name: 'E-Z Bar Curl', sets: [{ reps: 12, weight: 0 }] },
-      { name: 'Preacher Curl', sets: [{ reps: 12, weight: 0 }] },
-      { name: 'Incline DB Curl', sets: [{ reps: 12, weight: 0 }] },
-      { name: 'Hammer Curl', sets: [{ reps: 15, weight: 0 }] },
-    ],
-  },
-  // ... other muscle groups
-]
-
 const initialState: WorkoutState = {
-  muscleGroups: initialMuscleGroups,
-  workouts: []
+  workouts: [],
+  muscleGroups: [
+    { name: "Back Muscles", exercises: [] },
+    { name: "Biceps Muscles", exercises: [] },
+    { name: "Chest Muscles", exercises: [] },
+    { name: "Leg Muscles", exercises: [] },
+    { name: "Shoulder Muscles", exercises: [] },
+    { name: "Triceps Muscles", exercises: [] },
+    { name: "Core Muscles", exercises: [] },
+  ],
 }
 
 const workoutSlice = createSlice({
@@ -58,24 +45,22 @@ const workoutSlice = createSlice({
     addWorkout: (state, action: PayloadAction<Workout>) => {
       state.workouts.push(action.payload)
     },
-    addCustomExercise: (state, action: PayloadAction<{ muscleGroup: string; exercise: Exercise }>) => {
+    addCustomExercise: (state, action: PayloadAction<{ muscleGroup: string, exercise: Exercise }>) => {
       const { muscleGroup, exercise } = action.payload
-      const existingGroup = state.muscleGroups.find(group => group.name === muscleGroup)
-      if (existingGroup) {
-        existingGroup.exercises.push(exercise)
-      } else {
-        state.muscleGroups.push({
-          name: muscleGroup,
-          exercises: [exercise]
-        })
+      const group = state.muscleGroups.find(g => g.name === muscleGroup)
+      if (group) {
+        group.exercises.push(exercise)
       }
     },
-    updateWorkout: (state, action: PayloadAction<{ index: number; workout: Workout }>) => {
-      state.workouts[action.payload.index] = action.payload.workout
-    }
-  }
+    removeCustomExercise: (state, action: PayloadAction<{ muscleGroup: string, exerciseName: string }>) => {
+      const { muscleGroup, exerciseName } = action.payload
+      const group = state.muscleGroups.find(g => g.name === muscleGroup)
+      if (group) {
+        group.exercises = group.exercises.filter(e => e.name !== exerciseName)
+      }
+    },
+  },
 })
 
-export const { addWorkout, addCustomExercise, updateWorkout } = workoutSlice.actions
-
+export const { addWorkout, addCustomExercise, removeCustomExercise } = workoutSlice.actions
 export default workoutSlice.reducer
