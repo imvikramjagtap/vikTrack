@@ -10,19 +10,6 @@ import { format, isWithinInterval, parseISO } from 'date-fns'
 import { DateRange } from 'react-day-picker'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
-interface WorkoutEntry {
-  date: string
-  muscleGroups: {
-    name: string
-    exercises: {
-      name: string
-      sets: {
-        reps: number
-        weight: number
-      }[]
-    }[]
-  }[]
-}
 
 interface FlattenedWorkout {
   date: string
