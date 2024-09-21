@@ -8,16 +8,21 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
-import { CalendarIcon, PlusIcon, MinusIcon, XIcon } from 'lucide-react'
+import { CalendarIcon, PlusIcon, MinusIcon, XIcon, DumbbellIcon } from 'lucide-react'
 import { format } from 'date-fns'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from "@/hooks/use-toast"
+import { useNavigate } from 'react-router-dom'
+interface WorkoutInputProps {
+  setActiveTab: (tab: string) => void;
+}
 
-export default function WorkoutInput() {
+export default function WorkoutInput({setActiveTab} : WorkoutInputProps) {
   const [selectedMuscles, setSelectedMuscles] = useState<string[]>([])
   const [workout, setWorkout] = useState<MuscleGroup[]>([])
   const [date, setDate] = useState<Date>(new Date())
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   const allMuscleGroups = useSelector((state: RootState) => state.workout.muscleGroups)
 
   const handleMuscleSelection = (muscle: string) => {
@@ -82,6 +87,11 @@ export default function WorkoutInput() {
     })
   }
 
+  const handleAddCustomExercise = (muscleGroup: string) => {
+    navigate(`/?muscle=${encodeURIComponent(muscleGroup)}`)
+    setActiveTab('custom')
+  }
+
   // Update workout when selected muscles change
   useEffect(() => {
     const newWorkout = allMuscleGroups.filter(mg => selectedMuscles.includes(mg.name))
@@ -141,64 +151,77 @@ export default function WorkoutInput() {
             <CardTitle>{muscleGroup.name}</CardTitle>
           </CardHeader>
           <CardContent>
-            {muscleGroup.exercises.map((exercise, exerciseIndex) => (
-              <div key={exercise.name} className="mb-4">
-                <div className="flex justify-between items-center mb-2">
-                  <h4 className="font-semibold">{exercise.name}</h4>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleRemoveExercise(muscleIndex, exerciseIndex)}
-                  >
-                    <XIcon className="h-4 w-4" />
-                  </Button>
-                </div>
-                {exercise.sets.map((set, setIndex) => (
-                  <div key={setIndex} className="grid grid-cols-7 gap-2 mb-2 items-center">
-                    <div className="col-span-1">
-                      <Label htmlFor={`${exercise.name}-set-${setIndex + 1}`}>Set {setIndex + 1}</Label>
-                    </div>
-                    <div className="col-span-2">
-                      <Label htmlFor={`${exercise.name}-reps-${setIndex}`}>Reps</Label>
-                      <Input
-                        id={`${exercise.name}-reps-${setIndex}`}
-                        type="number"
-                        value={set.reps}
-                        onChange={(e) => handleInputChange(muscleIndex, exerciseIndex, setIndex, 'reps', parseInt(e.target.value))}
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <Label htmlFor={`${exercise.name}-weight-${setIndex}`}>Weight (kg)</Label>
-                      <Input
-                        id={`${exercise.name}-weight-${setIndex}`}
-                        type="number"
-                        value={set.weight}
-                        onChange={(e) => handleInputChange(muscleIndex, exerciseIndex, setIndex, 'weight', parseFloat(e.target.value))}
-                      />
-                    </div>
-                    <div className="col-span-2 flex justify-end">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleRemoveSet(muscleIndex, exerciseIndex, setIndex)}
-                        className="mr-2"
-                      >
-                        <MinusIcon className="h-4 w-4" />
-                      </Button>
-                      {setIndex === exercise.sets.length - 1 && (
+            {muscleGroup.exercises.length === 0 ? (
+              <div className="text-center py-4">
+                <DumbbellIcon className="mx-auto h-12 w-12 text-gray-400" />
+                <p className="mt-2 text-sm text-gray-500">No exercises added for this muscle group.</p>
+                <Button
+                  onClick={() => handleAddCustomExercise(muscleGroup.name)}
+                  className="mt-4"
+                >
+                  Add Custom Exercise
+                </Button>
+              </div>
+            ) : (
+              muscleGroup.exercises.map((exercise, exerciseIndex) => (
+                <div key={exercise.name} className="mb-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <h4 className="font-semibold">{exercise.name}</h4>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemoveExercise(muscleIndex, exerciseIndex)}
+                    >
+                      <XIcon className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {exercise.sets.map((set, setIndex) => (
+                    <div key={setIndex} className="grid grid-cols-7 gap-2 mb-2 items-center">
+                      <div className="col-span-1">
+                        <Label htmlFor={`${exercise.name}-set-${setIndex + 1}`}>Set {setIndex + 1}</Label>
+                      </div>
+                      <div className="col-span-2">
+                        <Label htmlFor={`${exercise.name}-reps-${setIndex}`}>Reps</Label>
+                        <Input
+                          id={`${exercise.name}-reps-${setIndex}`}
+                          type="number"
+                          value={set.reps}
+                          onChange={(e) => handleInputChange(muscleIndex, exerciseIndex, setIndex, 'reps', parseInt(e.target.value))}
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Label htmlFor={`${exercise.name}-weight-${setIndex}`}>Weight (kg)</Label>
+                        <Input
+                          id={`${exercise.name}-weight-${setIndex}`}
+                          type="number"
+                          value={set.weight}
+                          onChange={(e) => handleInputChange(muscleIndex, exerciseIndex, setIndex, 'weight', parseFloat(e.target.value))}
+                        />
+                      </div>
+                      <div className="col-span-2 flex justify-end">
                         <Button
                           variant="outline"
                           size="icon"
-                          onClick={() => handleAddSet(muscleIndex, exerciseIndex)}
+                          onClick={() => handleRemoveSet(muscleIndex, exerciseIndex, setIndex)}
+                          className="mr-2"
                         >
-                          <PlusIcon className="h-4 w-4" />
+                          <MinusIcon className="h-4 w-4" />
                         </Button>
-                      )}
+                        {setIndex === exercise.sets.length - 1 && (
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handleAddSet(muscleIndex, exerciseIndex)}
+                          >
+                            <PlusIcon className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ))}
+                  ))}
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
       ))}

@@ -10,8 +10,9 @@ import WorkoutHistory from './workout-history'
 import ProgressGraph from './progress-graph'
 
 export default function App() {
+  const currentTheme: "light" | "dark" | null = localStorage.getItem('theme') as "light" | "dark" | null;
   const [activeTab, setActiveTab] = useState('workout')
-  const [theme, setTheme] = useState<'light' | 'dark'>('light')
+  const [theme, setTheme] = useState<'light' | 'dark'>(currentTheme || 'light')
   const muscleGroups = useSelector((state: RootState) => state.workout.muscleGroups)
 
   useEffect(() => {
@@ -65,7 +66,7 @@ export default function App() {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="workout">
-            <WorkoutInput />
+            <WorkoutInput setActiveTab={setActiveTab} />
           </TabsContent>
           <TabsContent value="custom">
             <CustomWorkout />

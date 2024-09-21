@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { addCustomExercise, Exercise } from '../store/workoutSlice'
+import { addCustomExercise, removeCustomExercise, Exercise } from '../store/workoutSlice'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -10,6 +10,7 @@ import { PlusIcon, XIcon } from 'lucide-react'
 import { useToast } from "@/hooks/use-toast"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { RootState } from '@/store'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 const suggestedExercises = {
   "Back Muscles": [
@@ -63,8 +64,19 @@ export default function CustomWorkout() {
   const dispatch = useDispatch()
   const { toast } = useToast()
   const allMuscleGroups = useSelector((state: RootState) => state.workout.muscleGroups)
+  const location = useLocation()
+  const navigate = useNavigate()
 
   const [addedExercises, setAddedExercises] = useState<Exercise[]>([])
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search)
+    const muscleParam = searchParams.get('muscle')
+    if (muscleParam) {
+      setMuscleGroup(decodeURIComponent(muscleParam))
+    }
+    navigate('/')
+  }, [location])
 
   useEffect(() => {
     if (muscleGroup) {
@@ -118,7 +130,7 @@ export default function CustomWorkout() {
   }
 
   const handleRemoveExercise = (exerciseName: string) => {
-    // dispatch(removeCustomExercise({ muscleGroup, exerciseName }))
+    dispatch(removeCustomExercise({ muscleGroup, exerciseName }))
     setAddedExercises(addedExercises.filter(e => e.name !== exerciseName))
     toast({
       title: "Exercise removed",
