@@ -9,21 +9,33 @@ import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
 import { CalendarIcon, PlusIcon, MinusIcon, XIcon, DumbbellIcon } from 'lucide-react'
-import { format } from 'date-fns'
+import { format, differenceInDays } from 'date-fns'
 import { Checkbox } from '@/components/ui/checkbox'
-import { toast } from "@/hooks/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import { useNavigate } from 'react-router-dom'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+
 interface WorkoutInputProps {
   setActiveTab: (tab: string) => void;
 }
 
-export default function WorkoutInput({setActiveTab} : WorkoutInputProps) {
+export default function WorkoutInput({ setActiveTab }: WorkoutInputProps) {
   const [selectedMuscles, setSelectedMuscles] = useState<string[]>([])
   const [workout, setWorkout] = useState<MuscleGroup[]>([])
   const [date, setDate] = useState<Date>(new Date())
+  const [showStreakDialog, setShowStreakDialog] = useState(false)
+  const [streakCount, setStreakCount] = useState(0)
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const { toast } = useToast()
   const allMuscleGroups = useSelector((state: RootState) => state.workout.muscleGroups)
+  const workouts = useSelector((state: RootState) => state.workout.workouts)
 
   const handleMuscleSelection = (muscle: string) => {
     setSelectedMuscles(prev => 
@@ -72,19 +84,50 @@ export default function WorkoutInput({setActiveTab} : WorkoutInputProps) {
   }
 
   const handleSubmit = () => {
+    if (workout.some(muscleGroup => muscleGroup.exercises.length === 0)) {
+      toast({
+        title: "Cannot save workout",
+        description: "Please add at least one exercise for each selected muscle group.",
+        variant: "destructive",
+      })
+      return
+    }
+
     const newWorkout: Workout = {
       date: format(date, 'yyyy-MM-dd'),
       muscleGroups: workout
     }
     dispatch(addWorkout(newWorkout))
+    updateStreak()
+    setShowStreakDialog(true)
     // Reset the form after submission
     setWorkout([])
     setSelectedMuscles([])
     setDate(new Date())
-    toast({
-      title: "Workout saved",
-      description: "Your workout has been successfully saved.",
-    })
+  }
+
+  const updateStreak = () => {
+    const sortedWorkouts = [...workouts, { date: format(date, 'yyyy-MM-dd') }]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+    let currentStreak = 1
+    let lastWorkoutDate = new Date(sortedWorkouts[0].date)
+
+    for (let i = 1; i < sortedWorkouts.length; i++) {
+      const currentDate = new Date(sortedWorkouts[i].date)
+      const daysDifference = differenceInDays(lastWorkoutDate, currentDate)
+
+      if (daysDifference === 1) {
+        currentStreak++
+        lastWorkoutDate = currentDate
+      } else if (daysDifference === 2) {
+        lastWorkoutDate = currentDate
+      } else {
+        break
+      }
+    }
+
+    setStreakCount(currentStreak)
   }
 
   const handleAddCustomExercise = (muscleGroup: string) => {
@@ -229,6 +272,25 @@ export default function WorkoutInput({setActiveTab} : WorkoutInputProps) {
       {selectedMuscles.length > 0 && (
         <Button onClick={handleSubmit} className="w-full">Save Workout</Button>
       )}
+
+      <Dialog open={showStreakDialog} onOpenChange={setShowStreakDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Workout Streak</DialogTitle>
+            <DialogDescription>
+              {streakCount > 1 ? (
+                <>
+                  <span className="text-2xl">🔥</span> Your current streak is {streakCount} days!
+                </>
+              ) : (
+                <>
+                  <span className="text-2xl">🕒</span> Keep it up! You're on day 1 of your streak.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
