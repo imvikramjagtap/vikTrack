@@ -15,7 +15,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('workout');
   const [streakCount, setStreakCount] = useState(0)
   const [streakStatus, setStreakStatus] = useState<'active' | 'warning' | 'lost'>('lost')
-  const [theme, setTheme] = useState<'light' | 'dark'>(currentTheme || 'light')
+  const [theme, setTheme] = useState<'light' | 'dark'>(currentTheme || 'dark')
   const workouts = useSelector((state: RootState) => state.workout.workouts)
 
   useEffect(() => {

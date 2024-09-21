@@ -170,7 +170,7 @@ export default function WorkoutInput({ setActiveTab }: WorkoutInputProps) {
               </PopoverContent>
             </Popover>
           </div>
-          <div>
+          <div className='space-y-2'>
             <Label htmlFor="muscles">Select Muscles to Train</Label>
             <div className="grid grid-cols-2 gap-2">
               {allMuscleGroups.map((muscleGroup) => (
@@ -190,10 +190,10 @@ export default function WorkoutInput({ setActiveTab }: WorkoutInputProps) {
 
       {workout.map((muscleGroup, muscleIndex) => (
         <Card key={muscleGroup.name}>
-          <CardHeader>
+          <CardHeader className='border-b mb-2'>
             <CardTitle>{muscleGroup.name}</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className=''>
             {muscleGroup.exercises.length === 0 ? (
               <div className="text-center py-4">
                 <DumbbellIcon className="mx-auto h-12 w-12 text-gray-400" />
@@ -207,7 +207,7 @@ export default function WorkoutInput({ setActiveTab }: WorkoutInputProps) {
               </div>
             ) : (
               muscleGroup.exercises.map((exercise, exerciseIndex) => (
-                <div key={exercise.name} className="mb-4">
+                <div key={exercise.name} className="mb-6">
                   <div className="flex justify-between items-center mb-2">
                     <h4 className="font-semibold">{exercise.name}</h4>
                     <Button
@@ -219,7 +219,7 @@ export default function WorkoutInput({ setActiveTab }: WorkoutInputProps) {
                     </Button>
                   </div>
                   {exercise.sets.map((set, setIndex) => (
-                    <div key={setIndex} className="grid grid-cols-7 gap-2 mb-2 items-center">
+                    <div key={setIndex} className="grid grid-cols-7 gap-2 items-center border-b pb-3">
                       <div className="col-span-1">
                         <Label htmlFor={`${exercise.name}-set-${setIndex + 1}`}>Set {setIndex + 1}</Label>
                       </div>
@@ -241,7 +241,7 @@ export default function WorkoutInput({ setActiveTab }: WorkoutInputProps) {
                           onChange={(e) => handleInputChange(muscleIndex, exerciseIndex, setIndex, 'weight', parseFloat(e.target.value))}
                         />
                       </div>
-                      <div className="col-span-2 flex justify-end">
+                      <div className="col-span-2 flex justify-end mt-5">
                         <Button
                           variant="outline"
                           size="icon"
