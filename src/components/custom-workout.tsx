@@ -6,8 +6,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { PlusIcon, CheckIcon } from 'lucide-react'
+import { PlusIcon, XIcon } from 'lucide-react'
 import { useToast } from "@/hooks/use-toast"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { RootState } from '@/store'
 
 const suggestedExercises = {
@@ -63,19 +64,19 @@ export default function CustomWorkout() {
   const { toast } = useToast()
   const allMuscleGroups = useSelector((state: RootState) => state.workout.muscleGroups)
 
-  const [addedExercises, setAddedExercises] = useState<string[]>([])
+  const [addedExercises, setAddedExercises] = useState<Exercise[]>([])
 
   useEffect(() => {
     if (muscleGroup) {
       const muscleGroupExercises = allMuscleGroups.find(mg => mg.name === muscleGroup)?.exercises || []
-      setAddedExercises(muscleGroupExercises.map(e => e.name))
+      setAddedExercises(muscleGroupExercises)
     } else {
       setAddedExercises([])
     }
   }, [muscleGroup, allMuscleGroups])
 
   const handleSubmit = () => {
-    if (addedExercises.includes(exerciseName)) {
+    if (addedExercises.some(e => e.name.toLowerCase() === exerciseName.toLowerCase())) {
       toast({
         title: "Exercise already exists",
         description: `${exerciseName} is already added to ${muscleGroup}.`,
@@ -93,14 +94,14 @@ export default function CustomWorkout() {
       title: "Custom exercise added",
       description: `${exerciseName} has been added to ${muscleGroup}.`,
     })
-    setAddedExercises([...addedExercises, exerciseName])
+    setAddedExercises([...addedExercises, newExercise])
     // Reset the form after submission
     setExerciseName('')
     setReps(0)
   }
 
   const handleAddSuggestedExercise = (exercise: Exercise) => {
-    if (addedExercises.includes(exercise.name)) {
+    if (addedExercises.some(e => e.name === exercise.name)) {
       toast({
         title: "Exercise already added",
         description: `${exercise.name} is already in ${muscleGroup}.`,
@@ -113,7 +114,16 @@ export default function CustomWorkout() {
       title: "Suggested exercise added",
       description: `${exercise.name} has been added to ${muscleGroup}.`,
     })
-    setAddedExercises([...addedExercises, exercise.name])
+    setAddedExercises([...addedExercises, exercise])
+  }
+
+  const handleRemoveExercise = (exerciseName: string) => {
+    // dispatch(removeCustomExercise({ muscleGroup, exerciseName }))
+    setAddedExercises(addedExercises.filter(e => e.name !== exerciseName))
+    toast({
+      title: "Exercise removed",
+      description: `${exerciseName} has been removed from ${muscleGroup}.`,
+    })
   }
 
   return (
@@ -144,6 +154,25 @@ export default function CustomWorkout() {
                 </SelectContent>
               </Select>
             </div>
+            {muscleGroup && (
+              <ScrollArea className="h-20">
+                <div className="flex flex-wrap gap-2">
+                  {suggestedExercises[muscleGroup as keyof typeof suggestedExercises]
+                    ?.filter(exercise => !addedExercises.some(e => e.name === exercise.name))
+                    .map((exercise) => (
+                      <Button
+                        key={exercise.name}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleAddSuggestedExercise(exercise)}
+                      >
+                        <PlusIcon className="h-4 w-4 mr-2" />
+                        {exercise.name}
+                      </Button>
+                    ))}
+                </div>
+              </ScrollArea>
+            )}
             <div>
               <Label htmlFor="exercise-name">Exercise Name</Label>
               <Input 
@@ -166,30 +195,23 @@ export default function CustomWorkout() {
         </CardContent>
       </Card>
 
-      {muscleGroup && (
+      {muscleGroup && addedExercises.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Suggested Exercises for {muscleGroup}</CardTitle>
+            <CardTitle>Added Exercises for {muscleGroup}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {suggestedExercises[muscleGroup as keyof typeof suggestedExercises]?.map((exercise) => (
+              {addedExercises.map((exercise) => (
                 <div key={exercise.name} className="flex justify-between items-center">
                   <span>{exercise.name}</span>
                   <Button
                     size="sm"
-                    variant="outline"
-                    onClick={() => handleAddSuggestedExercise(exercise)}
-                    disabled={addedExercises.includes(exercise.name)}
+                    variant="destructive"
+                    onClick={() => handleRemoveExercise(exercise.name)}
                   >
-                    {addedExercises.includes(exercise.name) ? (
-                      <CheckIcon className="h-4 w-4" />
-                    ) : (
-                      <>
-                        <PlusIcon className="h-4 w-4 mr-2" />
-                        Add
-                      </>
-                    )}
+                    <XIcon className="h-4 w-4 mr-2" />
+                    Remove
                   </Button>
                 </div>
               ))}
