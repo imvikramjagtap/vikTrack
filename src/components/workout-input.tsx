@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
-import { CalendarIcon, PlusIcon, MinusIcon } from 'lucide-react'
+import { CalendarIcon, PlusIcon, MinusIcon, XIcon } from 'lucide-react'
 import { format } from 'date-fns'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from "@/hooks/use-toast"
@@ -54,6 +54,14 @@ export default function WorkoutInput() {
           variant: "destructive",
         })
       }
+      return newWorkout
+    })
+  }
+
+  const handleRemoveExercise = (muscleIndex: number, exerciseIndex: number) => {
+    setWorkout(prevWorkout => {
+      const newWorkout = JSON.parse(JSON.stringify(prevWorkout))
+      newWorkout[muscleIndex].exercises.splice(exerciseIndex, 1)
       return newWorkout
     })
   }
@@ -135,7 +143,16 @@ export default function WorkoutInput() {
           <CardContent>
             {muscleGroup.exercises.map((exercise, exerciseIndex) => (
               <div key={exercise.name} className="mb-4">
-                <h4 className="font-semibold mb-2">{exercise.name}</h4>
+                <div className="flex justify-between items-center mb-2">
+                  <h4 className="font-semibold">{exercise.name}</h4>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemoveExercise(muscleIndex, exerciseIndex)}
+                  >
+                    <XIcon className="h-4 w-4" />
+                  </Button>
+                </div>
                 {exercise.sets.map((set, setIndex) => (
                   <div key={setIndex} className="grid grid-cols-7 gap-2 mb-2 items-center">
                     <div className="col-span-1">
