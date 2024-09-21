@@ -163,6 +163,7 @@ export default function CustomWorkout() {
                   <SelectItem value="Shoulder Muscles">Shoulder Muscles</SelectItem>
                   <SelectItem value="Triceps Muscles">Triceps Muscles</SelectItem>
                   <SelectItem value="Core Muscles">Core Muscles</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>

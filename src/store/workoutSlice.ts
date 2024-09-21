@@ -35,6 +35,7 @@ const initialState: WorkoutState = {
     { name: "Shoulder Muscles", exercises: [] },
     { name: "Triceps Muscles", exercises: [] },
     { name: "Core Muscles", exercises: [] },
+    { name: "Other", exercises: [] },
   ],
 }
 
